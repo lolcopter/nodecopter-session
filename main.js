@@ -6,6 +6,8 @@ client.config('general:navdata_demo', 'FALSE');
 
 var pngStream = arDrone.createPngStream();
 
+var inFlightMode = false;
+
 var lastPng;
 
 pngStream.on('error', console.log)
@@ -20,17 +22,19 @@ client
      this.takeoff();
   })
   .after(4000, function() {
+  	  inFlightMode = true;
   	  // write to file
-  	  fs.writeFile('/Users/miku/Desktop/yay.png',lastPng, function(err) {
+  	  fs.writeFile('yay.png',lastPng, function(err) {
   	  	 if(err) throw err;
   	  	 console.log("image saved");
   	  });
 
-  	  this.clockwise(1.0);
+  	  //this.clockwise(1.0);
   })
-  .after(4000, function() {
+  .after(20000, function() {
+  	inFlightMode = false;
 
-  	fs.writeFile('/Users/miku/Desktop/yay2.png',lastPng, function(err) {
+  	fs.writeFile('yay2.png',lastPng, function(err) {
   	  	 if(err) throw err;
   	  	 console.log("second image saved");
   	  });
@@ -38,3 +42,25 @@ client
     this.stop();
     this.land();
   });
+
+var target = 0.8; // meter
+var skip = 0.4;
+client.on('navdata', function(navdata) {
+	if(inFlightMode) {
+		var altitude = navdata.demo.altitude;
+
+		client.stop();
+
+		if(altitude < target * 0.95) {
+			console.log("up", altitude)
+			client.up(0.1);
+		} else if (altitude > target * 1.05) {
+			console.log("down", altitude)
+			client.down(0.1)
+		} else {
+			console.log("in range", altitude);
+			target += skip;
+			skip = -skip;
+		}
+	}
+});
